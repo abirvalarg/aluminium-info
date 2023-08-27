@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Object file format - Aluminium toolchain</title>
+		<link rel="stylesheet" href="/style.css?2">
+	</head>
+	<body>
+		<header>
+			<h1><a href="/">Aluminium toolchain</a></h1>
+			<h2>Object file format, version 0</h2>
+		</header>
+		<main>
+			<div class="table-of-contents">
+				<ol>
+					<li><a href="#purpose">Purpose of the object files</a></li>
+					<li>
+						<a href="#data-representation">Data representation</a>
+						<ol>
+							<li><a href="#strings">Strings</a></li>
+						</ol>
+					</li>
+					<li>
+						<a href="#file-structure">File structure</a>
+						<ol>
+							<li><a href="#header">Header</a></li>
+							<li><a href="#section-list">Section list</a></li>
+							<li>
+								<a href="#section">Section</a>
+								<ol>
+									<li><a href="#section-header">Section header</a></li>
+									<li><a href="#symbol-array">Symbol array</a></li>
+									<li><a href="#relocation-info-array">Relocation information array</a></li>
+									<li><a href="#code-blob">Code blob</a></li>
+								</ol>
+							</li>
+						</ol>
+					</li>
+				</ol>
+			</div>
+
+			<h2 id="purpose">1 - Purpose of the object files</h2>
+			<p>Aluminium toolchain uses 2 stages to build executable files:</p>
+			<ol>
+				<li><i>Compilation</i>: converts source code into object files</li>
+				<li><i>Linking</i>: combines all object files into single executable file or another object file to combine
+					multiple files into one (libraries are not supported in this version)</li>
+			</ol>
+			<p>Object files are used as temporary storage for executable byte-code between those stages. They keep all the
+				information needed to create executable files, namely, label locations and relocation information for code.</p>
+			<p>Some compilers may require more stages internally to produce the object files.</p>
+
+			<h2 id="data-representation">2 - Data representation</h2>
+			<p>This file format is meant to support targets with different word sizes and byte orders. All data structures
+				use the native byte order, word size and alignment for the target platform, except for the file header,
+				because it’s used to determine those parameters. The header doesn’t use the word type, alignment is equal to
+				the size of the type and little-endian is used as byte order.</p>
+			<p>On most targets, multi-byte types have alignment equal to the size of the type.</p>
+			<p>This document uses types as in C headers “stddef.h” and “stdint.h”, such as <tt>size_t</tt>, <tt>uint8_t</tt>,
+				etc.</p>
+
+			<h3 id="strings">2.1 - Strings</h3>
+			<p>There are 2 kinds of strings in the format: fixed-length strings and variable-length strings. The fixed-length
+				string’s length is specified in the structure definition, if string that should be put in the structure is
+				shorter than defined, it is padded with zeros bytes (\0) at the end.</p>
+			<p>Variable-length strings use 1st byte for length, contents start at 2nd byte. This limits string length up to
+				255 bytes. Currently this limitation seems reasonable but may be altered in the future.</p>
+			<p>Strings don’t have alignment because they consist of individual bytes.</p>
+			<p>Currently the format only allows ASCII characters to be in string fields.</p>
+
+			<h2 id="file-structure">3 - File structure</h2>
+			<p>Each file consists of a <i>header</i>, <i>section list</i> and multiple <i>sections</i>. Those structures are
+				described in this section.</p>
+
+			<h3 id="header">3.1 - Header</h3>
+			<p>Header keeps information about the file type and target platform. As mentioned in
+				<a href="#data-representation">Data representation</a>, all data is represented using little-endian.</p>
+			<caption>Header structure</caption>
+			<table>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>string(4)</td>
+					<td><tt>title</tt></td>
+					<td>Title of the file, must contain "ALOB"(<b>Al</b>uminium <b>Ob</b>ject).</td>
+				</tr>
+				<tr>
+					<td><tt>uint16_t</tt></td>
+					<td><tt>svn</tt></td>
+					<td>Sequential version number. For current version must be set to 0.</td>
+				</tr>
+				<tr>
+					<td>string(8)</td>
+					<td><tt>target</tt></td>
+					<td>Name of target architecture, list of supported targets is below</td>
+				</tr>
+				<tr>
+					<td>bytes(2)</td>
+					<td><tt>padding</tt></td>
+					<td>Padding for the next structure, the value doesn't matter</td>
+				</tr>
+			</table>
+			<caption>Supported targets</caption>
+			<table>
+				<tr>
+					<th>Target name</th>
+					<th><tt>target</tt> value</th>
+					<th><tt>size_t</tt> length in bytes</th>
+					<th>Notes</th>
+				</tr>
+				<tr>
+					<td>ARM (32 bits)</td>
+					<td><tt>ARM</tt></td>
+					<td>4</td>
+					<td>Used for both ARM and Thumb targets. To tell which instruction set is used, add 1 to addresses of
+						Thumb instructions</td>
+				</tr>
+			</table>
+
+			<h3 id="section-list">3.2 - Section list</h3>
+			<p>This structure goes right after the header. It consists of <tt>size_t</tt> field containing the number of
+				sections and an array of section entries described below.</p>
+			<caption>Section entry</caption>
+			<table>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>offset</tt></td>
+					<td>Offset of the section from the beginning of the file. It must be aligned to the word length of the
+						target architecture.</td>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>length</tt></td>
+					<td>Length of the section in bytes including all structures and code blob. This may or may not include
+						the padding after the section.</td>
+				</tr>
+				<tr>
+					<td>string(variable)</td>
+					<td><tt>name</tt></td>
+					<td>Name of the section. Must be unique to the file.</td>
+				</tr>
+			</table>
+			<p>Don’t forget about padding between the entries, each entry must be aligned as size_t for the target
+				architecture.</p>
+
+			<h3 id="section">3.3 - Section</h3>
+			<p>Each section is made of a <i>section header</i>, arrays with symbols and relocation information, followed by
+				the section code aligned as a target machine word.</p>
+
+			<h4 id="section-header">3.3.1 - Section header</h4>
+			<p>Section header contains information about symbol and relocation information arrays and code blob. The header
+				must be aligned as <tt>size_t</tt>.</p>
+			<caption>Section header</caption>
+			<table>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>num_symbols</tt></td>
+					<td>Number of symbols in symbol array.</td>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>num_relocations</tt></td>
+					<td>Number of relocation entries in relocation array.</td>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>blob_length</tt></td>
+					<td>Length of code blob in bytes.</td>
+				</tr>
+			</table>
+
+			<h4 id="symbol-array">3.3.2 - Symbol array</h4>
+			<p>All symbols exported from the section or used internally during the relocation are defined in this array that
+				immediately follows the section header (padding is not needed in this case). However, each entry in array may
+				require padding if previous entry’s end isn’t aligned because of the string in it.</p>
+			<caption>Symbol array entry</caption>
+			<table>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>value</tt></td>
+					<td>Value of the symbol, usually an offset from the start of the section blob.</td>
+				</tr>
+				<tr>
+					<td><tt>uint8_t</tt></td>
+					<td><tt>flags</tt></td>
+					<td>Bit-wise OR of the flags that apply to the symbol, listed below.</td>
+				</tr>
+				<tr>
+					<td>string(variable)</td>
+					<td><tt>name</tt></td>
+					<td>Name of the symbol</td>
+				</tr>
+			</table>
+			<caption>Symbol flags</caption>
+			<table>
+				<tr>
+					<th>Value</th>
+					<th>Meaning</th>
+				</tr>
+				<tr>
+					<td>1</td>
+					<td>Local, this symbol should not be accessible from other sections.</td>
+				</tr>
+			</table>
+
+			<h4 id="relocation-info-array">3.3.3 - Relocation information array</h4>
+			<p>his array contains information required for code relocation of the section. It goes right after the symbols
+				array with padding, if necessary because of a string in the last entry.</p>
+			<caption>Relocation array entry</caption>
+			<table>
+				<tr>
+					<th>Type</th>
+					<th>Name</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td><tt>size_t</tt></td>
+					<td><tt>location</tt></td>
+					<td>Offset of the relocation item from the start of the code blob.</td>
+				</tr>
+				<tr>
+					<td><tt>uint8_t</tt></td>
+					<td><tt>kind</tt></td>
+					<td>Kind of the relocation object (see table below).</td>
+				</tr>
+				<tr>
+					<td>string(variable)</td>
+					<td><tt>symbol</tt></td>
+					<td>Name of the symbol that sould be inserted data or instruction.</td>
+				</tr>
+			</table>
+			<p>The <tt>kind</tt> field determines the kind of relocation, it may be either a simple data relocation, when a
+				whole data unit is replaced with the symbol value, or an instruction relocation, when instruction parameters
+				are replaced with the value. If the value in relocation location is not 0, it is added to the value of the
+				symbol.</p>
+			<caption>Relocation kinds</caption>
+			<table>
+				<tr>
+					<th><tt>kind</tt> field value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>0</td>
+					<td>Instruction relocation. Target is the argument of the instruction in specified location.</td>
+				</tr>
+				<tr>
+					<td>1</td>
+					<td><tt>size_t</tt> relocation. Target is the word at the location, should be aligned.</td>
+				</tr>
+				<tr>
+					<td>2</td>
+					<td><tt>uint8_t</tt> relocation. Target is the byte at the location.</td>
+				</tr>
+				<tr>
+					<td>3</td>
+					<td><tt>uint16_t</tt> relocation. Target is a pair of bytes, should be aligned.</td>
+				</tr>
+				<tr>
+					<td>4</td>
+					<td><tt>uint32_t</tt> relocation. Target is a sequence of 4 bytes, should be aligned.</td>
+				</tr>
+			</table>
+
+			<h4 id="code-blob">3.3.4 - Code blob</h4>
+			<p>Code blob contains the bytecode for target machine or data blob that needs to be relocated in order to make a
+				working executable file. This part goes right after the array of relocation information with padding, if
+				necessary.</p>
+		</main>
+	</body>
+</html>

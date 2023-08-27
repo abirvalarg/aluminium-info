@@ -1,0 +1,14 @@
+header {
+	border-bottom: 1px solid black;
+}
+
+table, td, th {
+	border: 1px solid black;
+	border-collapse: collapse;
+	padding: 2px;
+}
+
+.table-of-contents {
+	width: fit-content;
+	border: 1px solid black;
+}
