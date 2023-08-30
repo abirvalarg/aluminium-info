@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Directives - Assembler for ARM - Aluminium toolchain</title>
+		<link rel="stylesheet" href="/style.css">
+	</head>
+	<body>
+		<header>
+			<h1><a href="/">Aluminium toolchain</a></h1>
+			<h2><a href="/arm/asm">Assembler</a> for <a href="/arm">ARM</a></h2>
+			<h3>Directives</h3>
+		</header>
+		<main>
+			<p>NOTE: this list in not in alphabetical order, directives are ordered in a was that seems to make sense to
+				me.</p>
+
+			<h1><tt>.section &lt;name&gt;</tt></h1>
+			<p>Used to start a new section. Applies to everything after it and before the next <tt>.section</tt>
+				directive.</p>
+
+			<h1><tt>.equ &lt;label&gt;, &lt;expression&gt;</tt></h1>
+			<p>Assign a value to a label. Must belong to a section.</p>
+			<h2>Example</h2>
+			<pre>
+.equ length, . - start
+			</pre>
+
+			<h1><tt>.global &lt;label&gt;</tt></h1>
+			<p>Mark a label as global. Must be in the same section as the target label.</p>
+
+			<h1><tt>.thumb_func</tt></h1>
+			<p>Applies to the next defined label. Adds 1 to the value of the label to mark the label as a Thumb function.</p>
+			<h2>Example</h2>
+			<pre>
+.thumb_func
+main:
+; code here
+			</pre>
+
+			<h1><tt>.align &lt;size&gt; [, &lt;expression&gt;]</tt></h1>
+			<p>Insert the values of the expression as bytes or zeros, if no expression is given, so that the counter is
+				aligned to the given size. The size must be a power of 2.</p>
+
+			<h1><tt>.byte &lt;expression&gt;</tt></h1>
+			<p>Insert a byte into the resulting blob.</p>
+
+			<h1><tt>.halfword &lt;expression&gt;</tt></h1>
+			<p>Insert a half-word (2 bytes) into the resulting blob. Implicitly adds alignment, may mess up labels.</p>
+
+			<h1><tt>.word &lt;expression&gt;</tt></h1>
+			<p>Insert a word (4 bytes) into the resulting blob. Implicitly adds alignment, may mess up labels.</p>
+		</main>
+	</body>
+</html>

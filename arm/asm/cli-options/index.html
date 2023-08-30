@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Command line options - Assembler for ARM - Aluminium toolchain</title>
+		<link rel="stylesheet" href="/style.css?1">
+	</head>
+	<body>
+		<header>
+			<h1><a href="/">Aluminium toolchain</a></h1>
+			<h2><a href="/arm/asm">Assembler</a> for <a href="/arm">ARM</a></h2>
+			<h3>Command line options</h3>
+		</header>
+		<main>
+			<p>Command line options are used to give the assembler information about which files
+				to assemble, how to do that and where to put the results.</p>
+			<table>
+				<tr>
+					<th>Short option</th>
+					<th>Full option</th>
+					<th>Description</th>
+					<th>Default</th>
+				</tr>
+				<tr>
+					<td><tt>-h</tt></td>
+					<td><tt>--help</tt></td>
+					<td>Show information about usage of the assembler and exit.</td>
+					<td>Doesn't show help.</td>
+				</tr>
+				<tr>
+					<td><tt>-v</tt></td>
+					<td><tt>--version</tt></td>
+					<td>Show version information about</td>
+					<td>Doesn't show version information and exit.</td>
+				</tr>
+				<tr>
+					<td><tt>-i &lt;instruction set&gt;</tt></td>
+					<td><tt>--instruction-set &lt;instruction set&gt;</tt></td>
+					<td>Specify the instruction set, either <tt>arm</tt> or <tt>thumb</tt></td>
+					<td><tt>arm</tt></td>
+				</tr>
+				<tr>
+					<td><tt>-o &lt;path&gt;</tt></td>
+					<td><tt>--output &lt;path&gt;</tt></td>
+					<td>Specify the output file path.</td>
+					<td>Outputs to the stdout</td>
+				</tr>
+			</table>
+			<p>Every command line item that doesn't start with a hyphen (<tt>-</tt>) is interpreted
+				as an input file. If no input files are provided, the assembler will read stdin. If
+				an input file starts with a hyphen, use "<tt>--</tt>" to tell the assembler to stop
+				looking for flags and interpret everything after as an input files.</p>
+			<p>All input files are processed as if it is one file with contents of all files in the
+				same order as they appear in command line.</p>
+		</main>
+		<footer>
+			<p><a href="../file-structure">Next (Common file structure)</a></p>
+		</footer>
+	</body>
+</html>
